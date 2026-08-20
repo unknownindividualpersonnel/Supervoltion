@@ -5,8 +5,8 @@ Supervoltion is a emulator of the Super Nintendo Entertainment System (or Super 
 
 | Goal | Done? | Status |
 |---|---|---|
-| CPU emulation | No | WIP |
-| S-PPU chip emulation | No | Not WIP |
-| APU emulation | No | Not WIP |
+| CPU (65C816 at 3.58 MHz) emulation | No | WIP |
+| S-PPU 1 and S-PPU 2 chip emulation | No | Not WIP |
+| APU (SPC700) emulation | No | Not WIP |
 | Passed all checks in SNSP Aging | No | 0 checks |
-| ROM load | No | WIP |
+| Make a ROM boot | No | WIP |
