@@ -9,7 +9,7 @@
 <body>
   <header>
     <h1>Supervoltion — SNES emulator (prototype)</h1>
-    <p>Current status: ROM loader & header inspector. Next: integrate WASM emulator core and boot ROMs.</p>
+    <p>Current status: ROM loader & header inspector. Next: CPU core implementation from scratch (in JS).</p>
   </header>
 
   <main>
@@ -22,13 +22,28 @@
       <pre id="hexdump"></pre>
     </section>
 
+    <section id="emulator-controls">
+      <h2>Emulator (dev)</h2>
+      <div class="controls">
+        <button id="load-demo" class="btn">Load demo program</button>
+        <button id="start" class="btn">Start</button>
+        <button id="stop" class="btn">Stop</button>
+        <button id="step" class="btn">Step</button>
+        <span id="status">Stopped</span>
+      </div>
+      <div>
+        <h3>Console output</h3>
+        <pre id="console" style="height:160px;overflow:auto;background:#111;color:#0f0;padding:8px;border-radius:6px"></pre>
+      </div>
+    </section>
+
     <section id="next-steps">
       <h2>Next steps</h2>
       <ol>
-        <li>Integrate a WASM or JS SNES core (e.g., a prebuilt snes9x / libretro build compiled to WASM).</li>
-        <li>Wire file input to the emulator memory and attempt a boot.</li>
-        <li>Implement PPU and APU subsystems or reuse a full core.</li>
-        <li>Run SNSP Aging / test suites and iterate on compatibility.</li>
+        <li>Continue implementing 65C816 CPU in pure JS (instruction set, addressing modes, flags, emulation/native modes).</li>
+        <li>Design memory map for ROM / SRAM / PPU / APU and integrate PPU framebuffer output to canvas.</li>
+        <li>Implement SPC700 APU or create an audio shim for now.</li>
+        <li>Run SNSP Aging tests once core is feature-complete.</li>
       </ol>
     </section>
   </main>
@@ -37,6 +52,9 @@
     <p>Built by GitHub Copilot AI — iterative development in HTML + JavaScript.</p>
   </footer>
 
+  <script src="js/memory.js"></script>
+  <script src="js/cpu.js"></script>
+  <script src="js/emulator.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

@@ -1,9 +1,16 @@
-// Simple ROM loader and header inspector for Supervoltion
-
+// Simple glue: hook UI controls to the Emulator
 const fileInput = document.getElementById('rom-file');
 const dropzone = document.getElementById('dropzone');
 const info = document.getElementById('info');
 const hexdump = document.getElementById('hexdump');
+const consoleEl = document.getElementById('console');
+const startBtn = document.getElementById('start');
+const stopBtn = document.getElementById('stop');
+const stepBtn = document.getElementById('step');
+const loadDemoBtn = document.getElementById('load-demo');
+const statusEl = document.getElementById('status');
+
+const emu = new Emulator(consoleEl);
 
 fileInput.addEventListener('change', (e) => {
   const f = e.target.files[0];
@@ -23,6 +30,9 @@ async function loadRomFile(file){
   const ab = await file.arrayBuffer();
   const bytes = new Uint8Array(ab);
   inspectRom(bytes, file.size);
+  // keep ROM bytes globally available and load into emulator memory
+  window.latestROM = bytes;
+  emu.loadROMBytes(bytes);
 }
 
 function readAscii(bytes, offset, length){
@@ -30,19 +40,16 @@ function readAscii(bytes, offset, length){
   for(let i=0;i<length;i++){
     const b = bytes[offset+i];
     if (!b) break;
-    // printable range 0x20-0x7E
     s += (b>=0x20 && b<=0x7e)? String.fromCharCode(b) : '.';
   }
   return s.replace(/\.+$/,'');
 }
 
 function inspectRom(bytes, size){
-  // Header candidates
   const candidates = [0x7fc0, 0xffc0];
   const results = candidates.map(off => {
     if (off + 32 > bytes.length) return null;
     const title = readAscii(bytes, off, 21);
-    // read some header bytes for display
     const mapMode = bytes[off+0x15];
     const romType = bytes[off+0x16];
     const romSize = bytes[off+0x17];
@@ -55,7 +62,6 @@ function inspectRom(bytes, size){
     return {off,title,mapMode,romType,romSize,sramSize,country,license,version,checksumComplement,checksum};
   });
 
-  // Choose best candidate: prefer one with printable title
   let chosen = null;
   for(const r of results){
     if (!r) continue;
@@ -87,7 +93,6 @@ function inspectRom(bytes, size){
     info.appendChild(el);
   }
 
-  // Render small hex preview
   const len = Math.min(512, bytes.length);
   let hex = '';
   for(let i=0;i<len;i+=16){
@@ -99,3 +104,23 @@ function inspectRom(bytes, size){
   }
   hexdump.textContent = hex;
 }
+
+loadDemoBtn.addEventListener('click', ()=>{
+  consoleEl.textContent = '';
+  emu.loadDemoProgram();
+});
+
+startBtn.addEventListener('click', ()=>{
+  statusEl.textContent = 'Running';
+  emu.start();
+});
+
+stopBtn.addEventListener('click', ()=>{
+  statusEl.textContent = 'Stopped';
+  emu.stop();
+});
+
+stepBtn.addEventListener('click', ()=>{
+  emu.stepOnce();
+});
+
