@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Supervoltion commit 20bc617</title>
+  <title>Supervoltion — SNES emulator (prototype)</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
   <header>
-    <h1>Supervoltion — commit 20bc617</h1>
-    <p>slop.</p>
+    <h1>Supervoltion — SNES emulator (prototype)</h1>
+    <p>Current status: ROM loader & header inspector. Next: CPU core implementation from scratch (in JS).</p>
   </header>
 
   <main>
@@ -29,12 +29,24 @@
         <button id="start" class="btn">Start</button>
         <button id="stop" class="btn">Stop</button>
         <button id="step" class="btn">Step</button>
+        <button id="run-tests" class="btn">Run CPU tests</button>
         <span id="status">Stopped</span>
       </div>
       <div>
         <h3>Console output</h3>
         <pre id="console" style="height:160px;overflow:auto;background:#111;color:#0f0;padding:8px;border-radius:6px"></pre>
       </div>
+    </section>
+
+    <section id="next-steps">
+      <h2>Next steps</h2>
+      <ol>
+        <li>Continue implementing 65C816 CPU in pure JS (instruction set, addressing modes, flags, emulation/native modes).</li>
+        <li>Design memory map for ROM / SRAM / PPU / APU and integrate PPU framebuffer output to canvas.</li>
+        <li>Implement SPC700 APU or create an audio shim for now.</li>
+        <li>Run SNSP Aging tests once core is feature-complete.</li>
+      </ol>
+    </section>
   </main>
 
   <footer>
@@ -42,8 +54,11 @@
   </footer>
 
   <script src="js/memory.js"></script>
+  <script src="js/addressing.js"></script>
+  <script src="js/opcodes.js"></script>
   <script src="js/cpu.js"></script>
   <script src="js/emulator.js"></script>
+  <script src="js/cpu_tests.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
