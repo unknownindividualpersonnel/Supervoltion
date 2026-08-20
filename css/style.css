@@ -1,0 +1,7 @@
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;margin:0;padding:1rem;background:#f6f8fa;color:#111}
+header{border-bottom:1px solid #e1e4e8;padding-bottom:1rem;margin-bottom:1rem}
+#dropzone{border:2px dashed #d1d5da;border-radius:8px;padding:1rem;display:inline-block;margin:0.5rem 0}
+#dropzone:focus{outline:2px solid #0366d6}
+.btn{background:#0366d6;color:#fff;padding:0.25rem 0.5rem;border-radius:4px;cursor:pointer;margin-left:0.5rem}
+#info{margin-top:1rem}
+pre{background:#0b1220;color:#cbd5e1;padding:1rem;border-radius:6px;overflow:auto}

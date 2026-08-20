@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Supervoltion — SNES emulator (prototype)</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header>
+    <h1>Supervoltion — SNES emulator (prototype)</h1>
+    <p>Current status: ROM loader & header inspector. Next: integrate WASM emulator core and boot ROMs.</p>
+  </header>
+
+  <main>
+    <section id="rom-section">
+      <h2>Load a ROM</h2>
+      <div id="dropzone" tabindex="0">Drop a ROM file here or
+        <label class="btn">Choose file<input id="rom-file" type="file" accept=".smc,.sfc,.zip" /></label>
+      </div>
+      <div id="info"></div>
+      <pre id="hexdump"></pre>
+    </section>
+
+    <section id="next-steps">
+      <h2>Next steps</h2>
+      <ol>
+        <li>Integrate a WASM or JS SNES core (e.g., a prebuilt snes9x / libretro build compiled to WASM).</li>
+        <li>Wire file input to the emulator memory and attempt a boot.</li>
+        <li>Implement PPU and APU subsystems or reuse a full core.</li>
+        <li>Run SNSP Aging / test suites and iterate on compatibility.</li>
+      </ol>
+    </section>
+  </main>
+
+  <footer>
+    <p>Built by GitHub Copilot AI — iterative development in HTML + JavaScript.</p>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
