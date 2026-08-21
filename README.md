@@ -1,3 +1,6 @@
+# Disclaimer
+THIS PROJECT IS AN EXPERIMENT. IT IS SIMPLY MEANT AS A DEMONSTRATION OF VIBECODING.
+
 # Supervoltion
 
 Supervoltion is an SNES emulator project. This repository initially contained only a README describing goals. I (GitHub Copilot) am beginning an iterative implementation in HTML + JavaScript.
