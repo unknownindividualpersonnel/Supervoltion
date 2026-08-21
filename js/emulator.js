@@ -1,4 +1,4 @@
-// Emulator harness: integrate ROM mapping (LoROM/HiROM) and wire PPU register handling
+// Updated Emulator harness to process CPU pending interrupts properly and reflect DMA behavior
 class Emulator {
   constructor(consoleEl, canvasEl) {
     this.mem = new Memory();
@@ -6,77 +6,58 @@ class Emulator {
     this.consoleEl = consoleEl;
     this.ppu = new SPPU(this.mem, this.cpu, canvasEl);
 
-    // hook simple console output at 0x006000 for debug
     this.mem.setWriteHook(0x006000, (v) => { this.log(String.fromCharCode(v)); });
 
-    // CPU VBlank callback
+    // CPU VBlank callback -> set pending NMI
     this.cpu.onVBlank = () => {
-      this.log('[emu] PPU: VBlank started (callback to CPU)\n');
-      // For now just mark the CPU with a flag; later we implement actual IRQ vector entry
-      this.cpu.vblank = true;
+      this.log('[emu] PPU: VBlank started (requesting NMI)\n');
+      // SNES usually generates NMI on VBlank if enabled; we set pendingNMI
+      this.cpu.pendingNMI = true;
     };
   }
 
-  log(s) {
-    if (this.consoleEl) { this.consoleEl.textContent += s; this.consoleEl.scrollTop = this.consoleEl.scrollHeight; } else console.log('[emu]', s);
-  }
+  log(s) { if (this.consoleEl) { this.consoleEl.textContent += s; this.consoleEl.scrollTop = this.consoleEl.scrollHeight; } else console.log('[emu]', s); }
 
   loadROMBytes(bytes) {
     const format = ROMMap.detectFormat(bytes);
     const result = ROMMap.mapToMemory(this.mem, bytes, format);
     this.format = format;
     this.log(`ROM loaded (${format}) mapped ${result.mappedBanks} banks, bankSize=${result.bankSize}\n`);
-    // set reset vector to bank 0x00 at 0x008000 for LoROM, or 0x00:0x0000 for HiROM depending
-    if (format === 'lorom') {
-      const loadAddr = 0x008000; this.mem.write16(0x0000, loadAddr & 0xFFFF); this.mem.write8(0x0002, 0x00); this.cpu.PC = loadAddr; this.cpu.PB = 0x00; this.cpu.DB = 0x00;
-    } else {
-      const loadAddr = 0x0000; this.mem.write16(0x0000, loadAddr & 0xFFFF); this.mem.write8(0x0002, 0x00); this.cpu.PC = loadAddr; this.cpu.PB = 0x00; this.cpu.DB = 0x00;
-    }
+    if (format === 'lorom') { const loadAddr = 0x008000; this.mem.write16(0x0000, loadAddr & 0xFFFF); this.mem.write8(0x0002, 0x00); this.cpu.PC = loadAddr; this.cpu.PB = 0x00; this.cpu.DB = 0x00; }
+    else { const loadAddr = 0x0000; this.mem.write16(0x0000, loadAddr & 0xFFFF); this.mem.write8(0x0002, 0x00); this.cpu.PC = loadAddr; this.cpu.PB = 0x00; this.cpu.DB = 0x00; }
   }
 
   loadDemoProgram() {
-    // Demo: CPU writes to PPU registers to set VRAM address and write VRAM data; then BRK.
-    // Sequence:
-    // write vram addr low/mid/high at 0x2105/06/07
-    // write data to 0x2108 repeatedly
-    const base = 0x0400;
-    const prog = [];
-    // set vram addr 0x0000
-    // write to bank:address mapping: we'll write to 0x002100.. but our Memory requires bank+addr, we write into bank 0x00
-    // We'll use STA abs to write to 0x002105 etc. (STA absolute 8D low high)
-    const WR = (addr24, val) => {
-      const low = addr24 & 0xFF; const hi = (addr24 >> 8) & 0xFF;
-      // LDA #val ; STA $addrLow/addrHi
-      prog.push(0xA9); prog.push(val & 0xFF);
-      prog.push(0x8D); prog.push(low); prog.push(hi);
-    };
-    // write vram addr low/mid/high to 0x2105/06/07
-    WR(0x002105, 0x00); WR(0x002106, 0x00); WR(0x002107, 0x00);
-    // write increment control to 0x2120 (set increment 1)
-    WR(0x002120, 0x01);
-    // now write a few bytes to VRAM via 0x2108
-    for (let i = 0; i < 1024; i++) {
-      WR(0x002108, i & 0xFF);
-    }
-    prog.push(0x00); // BRK
-    this.mem.loadAt(base, new Uint8Array(prog));
-    this.mem.write16(0x0000, base);
-    this.cpu.PC = base; this.cpu.PB = 0x00; this.cpu.DB = 0x00;
-    this.log('Demo program (PPU-write) loaded at 0x0400\n');
+    // Demo that performs DMA from ROM mapped region to VRAM using 0x4300 DMA registers
+    const base = 0x0500; const prog = [];
+    const WR = (addr24, val) => { const low = addr24 & 0xFF; const hi = (addr24 >> 8) & 0xFF; prog.push(0xA9); prog.push(val & 0xFF); prog.push(0x8D); prog.push(low); prog.push(hi); };
+    // Setup DMA registers in bank 0x00 region 0x4300..
+    // srcBank = 0x00; srcAddr = 0x008000; length = 0x0200; dest = VRAM(0)
+    // write srcBank
+    WR(0x004302, 0x00);
+    // write srcAddr low/high (0x008000 -> low=0x00, high=0x80)
+    WR(0x004303, 0x00); WR(0x004304, 0x80);
+    // write length low/high
+    WR(0x004305, 0x00); WR(0x004306, 0x02);
+    // write dest
+    WR(0x004301, 0x00);
+    // trigger (write to 0x4307)
+    WR(0x004307, 0x01);
+    prog.push(0x00);
+    this.mem.loadAt(base, new Uint8Array(prog)); this.mem.write16(0x0000, base); this.cpu.PC = base; this.cpu.PB = 0x00; this.cpu.DB = 0x00;
+    this.log('Demo DMA program loaded at 0x0500\n');
   }
 
   start() {
     this.cpu.running = true;
     const stepChunk = () => {
       if (!this.cpu.running) return;
-      // execute a number of CPU steps, but after every step advance PPU by consumed cycles
       for (let i = 0; i < 1000; i++) {
         if (!this.cpu.running) break;
-        // before executing, optionally handle pending interrupts (not fully implemented)
         this.cpu.step();
-        // assume 1 CPU step consumed a nominal 1 cycle; in our model we add entry.cycles earlier but not returned
-        // use cpu.cycles delta heuristics: advance PPU by 1 for each instruction cycle count entry; we approximate by adding 3 cycles per instruction
+        // after each instruction, advance PPU by approximate cycles
         this.ppu.step(3);
+        // if CPU requested IRQ/NMI handling it will be serviced at start of next instruction via cpu.step()
       }
       setTimeout(stepChunk, 0);
     };
