@@ -1,4 +1,4 @@
-// Simple glue: hook UI controls to the Emulator
+// Simple glue: hook UI controls to the Emulator (updated to pass canvas to emulator)
 const fileInput = document.getElementById('rom-file');
 const dropzone = document.getElementById('dropzone');
 const info = document.getElementById('info');
@@ -9,8 +9,9 @@ const stopBtn = document.getElementById('stop');
 const stepBtn = document.getElementById('step');
 const loadDemoBtn = document.getElementById('load-demo');
 const statusEl = document.getElementById('status');
+const screenCanvas = document.getElementById('screen');
 
-const emu = new Emulator(consoleEl);
+const emu = new Emulator(consoleEl, screenCanvas);
 
 fileInput.addEventListener('change', (e) => {
   const f = e.target.files[0];
@@ -30,7 +31,6 @@ async function loadRomFile(file){
   const ab = await file.arrayBuffer();
   const bytes = new Uint8Array(ab);
   inspectRom(bytes, file.size);
-  // keep ROM bytes globally available and load into emulator memory
   window.latestROM = bytes;
   emu.loadROMBytes(bytes);
 }
@@ -63,20 +63,14 @@ function inspectRom(bytes, size){
   });
 
   let chosen = null;
-  for(const r of results){
-    if (!r) continue;
-    if (r.title && /[A-Za-z0-9]/.test(r.title)) { chosen = r; break; }
-  }
+  for(const r of results){ if (!r) continue; if (r.title && /[A-Za-z0-9]/.test(r.title)) { chosen = r; break; } }
   if (!chosen) chosen = results.find(r=>r) || null;
 
   info.innerHTML = '';
-  const ul = document.createElement('div');
-  ul.innerHTML = `<strong>File size:</strong> ${size} bytes`;
-  info.appendChild(ul);
+  const ul = document.createElement('div'); ul.innerHTML = `<strong>File size:</strong> ${size} bytes`; info.appendChild(ul);
 
-  if (!chosen){
-    info.appendChild(document.createElement('div')).textContent = 'No 32-byte header found at common SNES header locations (0x7FC0 or 0xFFC0). The ROM may be smaller than expected or use an unusual header.';
-  } else {
+  if (!chosen){ info.appendChild(document.createElement('div')).textContent = 'No 32-byte header found at common SNES header locations (0x7FC0 or 0xFFC0). The ROM may be smaller than expected or use an unusual header.'; }
+  else {
     const el = document.createElement('div');
     el.innerHTML = `<h3>Selected header at 0x${chosen.off.toString(16)}</h3>
       <p><strong>Title:</strong> ${chosen.title || '<empty>'}</p>
@@ -105,22 +99,7 @@ function inspectRom(bytes, size){
   hexdump.textContent = hex;
 }
 
-loadDemoBtn.addEventListener('click', ()=>{
-  consoleEl.textContent = '';
-  emu.loadDemoProgram();
-});
-
-startBtn.addEventListener('click', ()=>{
-  statusEl.textContent = 'Running';
-  emu.start();
-});
-
-stopBtn.addEventListener('click', ()=>{
-  statusEl.textContent = 'Stopped';
-  emu.stop();
-});
-
-stepBtn.addEventListener('click', ()=>{
-  emu.stepOnce();
-});
-
+loadDemoBtn.addEventListener('click', ()=>{ consoleEl.textContent = ''; emu.loadDemoProgram(); });
+startBtn.addEventListener('click', ()=>{ statusEl.textContent = 'Running'; emu.start(); });
+stopBtn.addEventListener('click', ()=>{ statusEl.textContent = 'Stopped'; emu.stop(); });
+stepBtn.addEventListener('click', ()=>{ emu.stepOnce(); });

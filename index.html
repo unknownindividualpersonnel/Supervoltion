@@ -9,7 +9,7 @@
 <body>
   <header>
     <h1>Supervoltion — SNES emulator (prototype)</h1>
-    <p>Current status: ROM loader & header inspector. Next: CPU core implementation from scratch (in JS).</p>
+    <p>Current status: CPU & S-PPU work in progress (pure JS). Load a ROM or run the demo program.</p>
   </header>
 
   <main>
@@ -29,7 +29,6 @@
         <button id="start" class="btn">Start</button>
         <button id="stop" class="btn">Stop</button>
         <button id="step" class="btn">Step</button>
-        <button id="run-tests" class="btn">Run CPU tests</button>
         <span id="status">Stopped</span>
       </div>
       <div>
@@ -38,13 +37,19 @@
       </div>
     </section>
 
+    <section id="screen-section">
+      <h2>PPU framebuffer (simple shim)</h2>
+      <canvas id="screen" width="256" height="224" style="width:512px;height:448px;border:1px solid #ccc;background:#000"></canvas>
+      <p>Writes to the emulator memory range 0x007000 - 0x007000+<span id="fb-size"></span> map into this framebuffer (demo).</p>
+    </section>
+
     <section id="next-steps">
       <h2>Next steps</h2>
       <ol>
         <li>Continue implementing 65C816 CPU in pure JS (instruction set, addressing modes, flags, emulation/native modes).</li>
-        <li>Design memory map for ROM / SRAM / PPU / APU and integrate PPU framebuffer output to canvas.</li>
+        <li>Refine S-PPU behavior (tilemap, sprites, palettes) and map proper SNES PPU registers.</li>
         <li>Implement SPC700 APU or create an audio shim for now.</li>
-        <li>Run SNSP Aging tests once core is feature-complete.</li>
+        <li>Work on ROM mapping (LoROM/HiROM) and boot sequences.</li>
       </ol>
     </section>
   </main>
@@ -57,8 +62,8 @@
   <script src="js/addressing.js"></script>
   <script src="js/opcodes.js"></script>
   <script src="js/cpu.js"></script>
+  <script src="js/ppu.js"></script>
   <script src="js/emulator.js"></script>
-  <script src="js/cpu_tests.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

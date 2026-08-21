@@ -1,9 +1,10 @@
-// Simple memory model for the emulator
+// Simple memory model for the emulator with address space hooks and ranges
 class Memory {
   constructor(size = 0x1000000) { // 16MB 24-bit address space
     this.mem = new Uint8Array(size);
     this.size = size;
-    this.writeHooks = new Map(); // address -> callback
+    this.writeHooks = new Map(); // address -> callback(value, addr)
+    this.writeRanges = []; // [{start, end, cb}]
   }
 
   read8(addr) {
@@ -15,7 +16,12 @@ class Memory {
     addr = addr & 0xFFFFFF;
     this.mem[addr] = value & 0xFF;
     const hook = this.writeHooks.get(addr);
-    if (hook) hook(value & 0xFF);
+    if (hook) hook(value & 0xFF, addr);
+    for (const r of this.writeRanges) {
+      if (addr >= r.start && addr <= r.end) {
+        try { r.cb(value & 0xFF, addr); } catch (e) { console.error('writeRange callback error', e); }
+      }
+    }
   }
 
   read16(addr) {
@@ -37,6 +43,11 @@ class Memory {
   setWriteHook(addr, cb) {
     addr = addr & 0xFFFFFF;
     this.writeHooks.set(addr, cb);
+  }
+
+  setWriteHookRange(start, end, cb) {
+    start = start & 0xFFFFFF; end = end & 0xFFFFFF;
+    this.writeRanges.push({start, end, cb});
   }
 }
 
