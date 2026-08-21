@@ -7,8 +7,8 @@ Supervoltion is an SNES emulator project. This repository initially contained on
 - This first step lets you drop a .sfc/.smc ROM and inspects common SNES header locations (0x7FC0 and 0xFFC0), shows the ROM title, some header bytes, and a small hex preview.
 
 ## Goals (from original README)
-- CPU (65C816 at 3.58 MHz) emulation — Not started
-- S-PPU 1 and S-PPU 2 chip emulation — Not started
+- CPU (65C816 at 3.58 MHz) emulation — WIP
+- S-PPU 1 and S-PPU 2 chip emulation — WIP
 - APU (SPC700) emulation — Not started
 - Passed all checks in SNSP Aging — Not started
 - Make a ROM boot — WIP (we can now load ROMs and inspect headers)
