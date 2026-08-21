@@ -1,53 +1,40 @@
-// Simple memory model for the emulator with address space hooks and ranges
+// Minimal Memory abstraction with bulk load support for ROM mapping
 class Memory {
-  constructor(size = 0x1000000) { // 16MB 24-bit address space
-    this.mem = new Uint8Array(size);
+  constructor(size = 0x1000000) { // default 16MB addressable space
     this.size = size;
-    this.writeHooks = new Map(); // address -> callback(value, addr)
-    this.writeRanges = []; // [{start, end, cb}]
+    this.data = new Uint8Array(size);
   }
 
   read8(addr) {
-    addr = addr & 0xFFFFFF;
-    return this.mem[addr];
+    addr &= (this.size - 1);
+    return this.data[addr];
   }
 
   write8(addr, value) {
-    addr = addr & 0xFFFFFF;
-    this.mem[addr] = value & 0xFF;
-    const hook = this.writeHooks.get(addr);
-    if (hook) hook(value & 0xFF, addr);
-    for (const r of this.writeRanges) {
-      if (addr >= r.start && addr <= r.end) {
-        try { r.cb(value & 0xFF, addr); } catch (e) { console.error('writeRange callback error', e); }
-      }
+    addr &= (this.size - 1);
+    this.data[addr] = value & 0xFF;
+  }
+
+  // Bulk copy a Uint8Array into the memory at a 24-bit address.
+  // This is intentionally simple and fast for ROM mapping.
+  loadAt(addr24, bytes) {
+    let base = addr24 & 0xFFFFFF;
+    for (let i = 0; i < bytes.length; i++) {
+      const a = (base + i) & 0xFFFFFF;
+      if (a < this.size) this.data[a] = bytes[i];
     }
   }
 
+  // Helper to read an aligned 16-bit value from linear memory
   read16(addr) {
     const lo = this.read8(addr);
     const hi = this.read8((addr + 1) & 0xFFFFFF);
     return lo | (hi << 8);
   }
 
-  write16(addr, value) {
-    this.write8(addr, value & 0xFF);
-    this.write8((addr + 1) & 0xFFFFFF, (value >>> 8) & 0xFF);
-  }
-
-  loadAt(addr, bytes) {
-    addr = addr & 0xFFFFFF;
-    this.mem.set(bytes, addr);
-  }
-
-  setWriteHook(addr, cb) {
-    addr = addr & 0xFFFFFF;
-    this.writeHooks.set(addr, cb);
-  }
-
-  setWriteHookRange(start, end, cb) {
-    start = start & 0xFFFFFF; end = end & 0xFFFFFF;
-    this.writeRanges.push({start, end, cb});
+  write16(addr, val) {
+    this.write8(addr, val & 0xFF);
+    this.write8((addr + 1) & 0xFFFFFF, (val >>> 8) & 0xFF);
   }
 }
 
