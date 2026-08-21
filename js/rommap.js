@@ -1,67 +1,54 @@
-// ROM mapping utilities (LoROM and HiROM support)
-// This provides simple heuristics and mapping into the emulator Memory.
-
+// Simple ROM mapping utilities for prototype emulator
+// Provides detectFormat(bytes) and mapToMemory(mem, bytes, format)
 const ROMMap = {
   detectFormat(bytes) {
-    // Look for SNES header at 0x7FC0 (LoROM) and 0xFFC0 (HiROM)
-    const cand = [];
-    if (bytes.length > 0x8000) {
-      if (bytes.length > 0x8000 + 0x7fc0) cand.push({type: 'lorom', offset: 0x7fc0});
-      if (bytes.length > 0xffc0) cand.push({type: 'hirom', offset: 0xffc0});
+    // Basic detection: look for SNES 32-byte header at 0x7FC0 or 0xFFC0
+    function readTitle(off) {
+      if (off + 21 > bytes.length) return null;
+      let s = '';
+      for (let i = 0; i < 21; i++) {
+        const b = bytes[off + i];
+        if (!b) break;
+        if (b >= 0x20 && b <= 0x7e) s += String.fromCharCode(b);
+      }
+      return s;
     }
-    // prefer LoROM if title looks printable there
-    for (const c of cand) {
-      const title = ROMMap._readAscii(bytes, c.offset, 21);
-      if (/[A-Za-z0-9]/.test(title)) return c.type;
+    const candidates = [0x7FC0, 0xFFC0];
+    for (const off of candidates) {
+      const title = readTitle(off);
+      if (title && title.length > 0) {
+        // choose LoROM by default for now
+        return 'lorom';
+      }
     }
-    // fallback by size heuristic: if size is multiple of 0x8000 and banks > 32 -> hirom
-    const banks32k = Math.floor(bytes.length / 0x8000);
-    if (banks32k >= 64) return 'hirom';
+    // fallback
     return 'lorom';
   },
 
-  _readAscii(bytes, offset, length) {
-    let s = '';
-    for (let i = 0; i < length; i++) {
-      const b = bytes[offset + i];
-      if (!b) break;
-      s += (b >= 0x20 && b <= 0x7e) ? String.fromCharCode(b) : '.';
-    }
-    return s.replace(/\.+$/, '');
-  },
-
   mapToMemory(mem, bytes, format) {
-    // Map ROM bytes into the 24-bit memory according to LoROM or HiROM simple schemes.
-    // This is a pragmatic mapper: maps 32KB banks for LoROM and 64KB banks for HiROM.
-    if (format === 'lorom') {
-      // LoROM: 32KB banks mapped to bank:0x008000-0x00FFFF, 0x018000-0x01FFFF, ...
-      const bankSize = 0x8000;
-      const banks = Math.ceil(bytes.length / bankSize);
-      for (let b = 0; b < banks; b++) {
-        const chunk = bytes.subarray(b * bankSize, Math.min((b + 1) * bankSize, bytes.length));
-        const destAddr = (b << 16) | 0x8000; // bank b, offset 0x8000
-        mem.loadAt(destAddr, chunk);
-        // mirror into banks with high bit set (0x80 + b) for simple access from 0x80..0xFF
-        const mirrorBank = (0x80 | b) & 0xFF;
-        const mirrorAddr = (mirrorBank << 16) | 0x8000;
-        mem.loadAt(mirrorAddr, chunk);
-      }
-      return {mappedBanks: banks, bankSize};
-    } else {
-      // HiROM: 64KB banks mapped to 0x0000-0xFFFF regions per bank
-      const bankSize = 0x10000;
-      const banks = Math.ceil(bytes.length / bankSize);
-      for (let b = 0; b < banks; b++) {
-        const chunk = bytes.subarray(b * bankSize, Math.min((b + 1) * bankSize, bytes.length));
-        const destAddr = (b << 16) | 0x0000; // bank b, offset 0x0000
-        mem.loadAt(destAddr, chunk);
-        // mirror into 0x80+ bank region as well
-        const mirrorBank = (0x80 | b) & 0xFF;
-        const mirrorAddr = (mirrorBank << 16) | 0x0000;
-        mem.loadAt(mirrorAddr, chunk);
-      }
-      return {mappedBanks: banks, bankSize};
+    // Remove 512-byte copier header if present (common in SMC files)
+    let start = 0;
+    if (bytes.length % 0x8000 === 512) {
+      start = 512;
     }
+    const rom = bytes.subarray(start);
+    const bankSize = 0x8000; // LoROM bank size for mapping to $8000-$FFFF
+    const mappedBanks = Math.ceil(rom.length / bankSize);
+
+    for (let bank = 0; bank < mappedBanks; bank++) {
+      const sliceStart = bank * bankSize;
+      const sliceEnd = Math.min(sliceStart + bankSize, rom.length);
+      const chunk = rom.subarray(sliceStart, sliceEnd);
+      const addr = (bank << 16) | 0x8000;
+      if (typeof mem.loadAt === 'function') {
+        mem.loadAt(addr, chunk);
+      } else {
+        // fallback: write byte-by-byte
+        for (let i = 0; i < chunk.length; i++) mem.write8(addr + i, chunk[i]);
+      }
+    }
+
+    return { mappedBanks, bankSize };
   }
 };
 
