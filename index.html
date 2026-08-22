@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Supervoltion — SNES emulator (prototype)</title>
   <link rel="stylesheet" href="css/style.css" />
+  <style>/* Inline safe styles in case css file missing */
+    body{background:#0d1117;color:#c9d6e3;font-family:monospace;padding:16px}
+    .btn{padding:6px 8px;border-radius:4px;background:#10202a;color:#c9d6e3;border:1px solid #233042}
+    #dropzone{padding:10px;border:1px dashed #233042;border-radius:6px;color:#8ea3b9}
+  </style>
 </head>
 <body>
   <header>
@@ -58,14 +63,14 @@
     <p>Built by GitHub Copilot AI — iterative development in HTML + JavaScript.</p>
   </footer>
 
+  <!-- Core runtime scripts (order matters) -->
   <script src="js/memory.js"></script>
-  <script src="js/addressing.js"></script>
-  <script src="js/opcodes.js"></script>
-  <script src="js/cpu.js"></script>
-  <script src="js/opcodes_full.js"></script>
-  <script src="js/opcodes_loader.js"></script>
+  <script src="js/bus.js"></script>
   <script src="js/ppu.js"></script>
+  <script src="js/ppushim.js"></script>
   <script src="js/rommap.js"></script>
+  <script src="js/opcodes_loader.js"></script>
+  <script src="js/auto_wire.js"></script>
   <script src="js/emulator.js"></script>
   <script src="js/main.js"></script>
 </body>
